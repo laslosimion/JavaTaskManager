@@ -1,0 +1,163 @@
+{
+  "info": {
+    "name": "Barricade Task Manager",
+    "_postman_id": "d7e7f4f1-1c9f-4b45-9a15-000000000001",
+    "description": "Collection covering acceptance criteria",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/users",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "users"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Ada\",\"email\":\"ada@example.com\"}"
+        }
+      }
+    },
+    {
+      "name": "Get User (replace :id)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/users/:id",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "users",
+            ":id"
+          ],
+          "protocol": "http"
+        }
+      }
+    },
+    {
+      "name": "Create Task",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/tasks",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "tasks"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\":\"Write tests\",\"description\":\"cover acceptance criteria\",\"userId\":\"{{userId}}\"}"
+        }
+      }
+    },
+    {
+      "name": "List Tasks for User",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/tasks?userId={{userId}}&status=TODO&page=0&size=10",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{userId}}"
+            },
+            {
+              "key": "status",
+              "value": "TODO"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Task Status (replace :id)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/tasks/:id",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "tasks",
+            ":id"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\":\"IN_PROGRESS\"}"
+        }
+      }
+    },
+    {
+      "name": "Delete Task (replace :id)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/tasks/:id",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "tasks",
+            ":id"
+          ]
+        }
+      }
+    }
+  ]
+}

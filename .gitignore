@@ -33,6 +33,7 @@ release.properties
 
 # IntelliJ
 *.iml
+.idea/
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/dictionaries
