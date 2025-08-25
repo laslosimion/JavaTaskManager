@@ -12,8 +12,6 @@ public class TaskDtos {
         @NotBlank @Size(min=1, max=140)
         public String title;
         public String description;
-        @NotNull
-        public UUID userId;
     }
 
     public static class UpdateTaskStatusRequest {

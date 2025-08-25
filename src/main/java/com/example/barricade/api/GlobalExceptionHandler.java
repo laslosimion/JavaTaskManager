@@ -1,6 +1,7 @@
 package com.example.barricade.api;
 
 import com.example.barricade.service.ConflictException;
+import com.example.barricade.service.ForbiddenException;
 import com.example.barricade.service.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -57,5 +58,15 @@ public class GlobalExceptionHandler {
         p.message = "Data integrity violation: " + ex.getMostSpecificCause().getMessage();
         p.path = req.getRequestURI();
         return new ResponseEntity<>(p, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorPayload> handleForbidden(ForbiddenException ex, HttpServletRequest req) {
+        ErrorPayload p = new ErrorPayload();
+        p.status = HttpStatus.FORBIDDEN.value();
+        p.error = HttpStatus.FORBIDDEN.getReasonPhrase();
+        p.message = ex.getMessage();
+        p.path = req.getRequestURI();
+        return new ResponseEntity<>(p, HttpStatus.FORBIDDEN);
     }
 }

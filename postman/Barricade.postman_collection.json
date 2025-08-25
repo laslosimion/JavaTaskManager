@@ -1,139 +1,135 @@
 {
   "info": {
-    "name": "Barricade Task Manager",
-    "_postman_id": "d7e7f4f1-1c9f-4b45-9a15-000000000001",
-    "description": "Collection covering acceptance criteria",
+    "name": "Barricade Task Manager JWT",
+    "_postman_id": "d7e7f4f1-1c9f-4b45-9a15-000000000005",
+    "description": "Postman collection for JWT-protected endpoints",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "token", "value": "" },
+    { "key": "taskId", "value": "" }
+  ],
   "item": [
     {
-      "name": "Create User",
+      "name": "Register User",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" }
         ],
         "url": {
-          "raw": "http://localhost:8080/users",
+          "raw": "http://localhost:8080/auth/register",
           "protocol": "http",
-          "host": [
-            "localhost"
-          ],
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "users"
-          ]
+          "path": ["auth","register"]
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"name\":\"Ada\",\"email\":\"ada@example.com\"}"
+          "raw": "{\"name\":\"Ada\",\"email\":\"ada@example.com\",\"password\":\"secret123\"}"
         }
       }
     },
     {
-      "name": "Get User (replace :id)",
+      "name": "Login User",
       "request": {
-        "method": "GET",
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
         "url": {
-          "raw": "http://localhost:8080/users/:id",
-          "host": [
-            "localhost"
-          ],
+          "raw": "http://localhost:8080/auth/login",
+          "protocol": "http",
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "users",
-            ":id"
-          ],
-          "protocol": "http"
+          "path": ["auth","login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"ada@example.com\",\"password\":\"secret123\"}"
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.environment.set('token', json.token);"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "Create Task",
       "request": {
         "method": "POST",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "url": {
           "raw": "http://localhost:8080/tasks",
           "protocol": "http",
-          "host": [
-            "localhost"
-          ],
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "tasks"
-          ]
+          "path": ["tasks"]
         },
         "body": {
           "mode": "raw",
-          "raw": "{\"title\":\"Write tests\",\"description\":\"cover acceptance criteria\",\"userId\":\"{{userId}}\"}"
+          "raw": "{\"title\":\"Write tests\",\"description\":\"cover acceptance criteria\"}"
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.environment.set('taskId', json.id);"
+            ]
+          }
+        }
+      ]
     },
     {
-      "name": "List Tasks for User",
+      "name": "List Tasks",
       "request": {
         "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
         "url": {
-          "raw": "http://localhost:8080/tasks?userId={{userId}}&status=TODO&page=0&size=10",
+          "raw": "http://localhost:8080/tasks?status=TODO&page=0&size=10",
           "protocol": "http",
-          "host": [
-            "localhost"
-          ],
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "tasks"
-          ],
+          "path": ["tasks"],
           "query": [
-            {
-              "key": "userId",
-              "value": "{{userId}}"
-            },
-            {
-              "key": "status",
-              "value": "TODO"
-            },
-            {
-              "key": "page",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            }
+            { "key": "status", "value": "TODO" },
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
           ]
         }
       }
     },
     {
-      "name": "Update Task Status (replace :id)",
+      "name": "Update Task Status",
       "request": {
         "method": "PUT",
         "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
         ],
         "url": {
-          "raw": "http://localhost:8080/tasks/:id",
+          "raw": "http://localhost:8080/tasks/{{taskId}}",
           "protocol": "http",
-          "host": [
-            "localhost"
-          ],
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "tasks",
-            ":id"
-          ]
+          "path": ["tasks","{{taskId}}"]
         },
         "body": {
           "mode": "raw",
@@ -142,20 +138,18 @@
       }
     },
     {
-      "name": "Delete Task (replace :id)",
+      "name": "Delete Task",
       "request": {
         "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
         "url": {
-          "raw": "http://localhost:8080/tasks/:id",
+          "raw": "http://localhost:8080/tasks/{{taskId}}",
           "protocol": "http",
-          "host": [
-            "localhost"
-          ],
+          "host": ["localhost"],
           "port": "8080",
-          "path": [
-            "tasks",
-            ":id"
-          ]
+          "path": ["tasks","{{taskId}}"]
         }
       }
     }

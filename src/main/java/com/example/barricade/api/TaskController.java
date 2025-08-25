@@ -29,13 +29,13 @@ public class TaskController {
 
     @GetMapping
     public Page<TaskDtos.TaskResponse> list(
-            @RequestParam("userId") UUID userId,
             @RequestParam(value = "status", required = false) TaskStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
-        return taskService.list(userId, status, PageRequest.of(page, size));
+        return taskService.list(status, PageRequest.of(page, size));
     }
+
 
     @PutMapping("/{id}")
     public TaskDtos.TaskResponse updateStatus(

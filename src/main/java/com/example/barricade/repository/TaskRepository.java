@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
-    List<Task> findByUser_Id(UUID userId);
     Page<Task> findByUser_Id(UUID userId, Pageable pageable);
     Page<Task> findByUser_IdAndStatus(UUID userId, TaskStatus status, Pageable pageable);
 }

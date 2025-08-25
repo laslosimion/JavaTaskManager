@@ -24,7 +24,7 @@ public class TaskService {
 
     @Transactional
     public TaskDtos.TaskResponse create(TaskDtos.CreateTaskRequest req) {
-        User owner = userService.getEntity(req.userId);
+        User owner = userService.getCurrentAuthenticatedUser();
         Task t = new Task();
         t.setTitle(req.title);
         t.setDescription(req.description);
@@ -34,27 +34,30 @@ public class TaskService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskDtos.TaskResponse> list(UUID userId, TaskStatus status, Pageable pageable) {
+    public Page<TaskDtos.TaskResponse> list(TaskStatus status, Pageable pageable) {
+        User owner = userService.getCurrentAuthenticatedUser();
         if (status == null) {
-            return tasks.findByUser_Id(userId, pageable).map(TaskService::map);
+            return tasks.findByUser_Id(owner.getId(), pageable).map(TaskService::map);
         } else {
-            return tasks.findByUser_IdAndStatus(userId, status, pageable).map(TaskService::map);
+            return tasks.findByUser_IdAndStatus(owner.getId(), status, pageable).map(TaskService::map);
         }
     }
 
     @Transactional
     public TaskDtos.TaskResponse updateStatus(UUID id, TaskStatus newStatus) {
         Task t = tasks.findById(id).orElseThrow(() -> new NotFoundException("Task not found"));
-        TaskStatus current = t.getStatus();
-        // Allowed transitions: TODO -> IN_PROGRESS -> DONE
-        if (current == newStatus) {
-            return map(t);
+        User owner = userService.getCurrentAuthenticatedUser();
+        if (!t.getUser().getId().equals(owner.getId())) {
+            throw new ForbiddenException("You cannot modify someone else's task");
         }
+
+        TaskStatus current = t.getStatus();
+        if (current == newStatus) return map(t);
+
         boolean ok = (current == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS)
                 || (current == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.DONE);
-        if (!ok) {
-            throw new ConflictException("Invalid status transition from " + current + " to " + newStatus);
-        }
+        if (!ok) throw new ConflictException("Invalid status transition from " + current + " to " + newStatus);
+
         t.setStatus(newStatus);
         tasks.save(t);
         return map(t);
@@ -62,10 +65,12 @@ public class TaskService {
 
     @Transactional
     public void delete(UUID id) {
-        if (!tasks.existsById(id)) {
-            throw new NotFoundException("Task not found");
+        Task t = tasks.findById(id).orElseThrow(() -> new NotFoundException("Task not found"));
+        User owner = userService.getCurrentAuthenticatedUser();
+        if (!t.getUser().getId().equals(owner.getId())) {
+            throw new ForbiddenException("You cannot delete someone else's task");
         }
-        tasks.deleteById(id);
+        tasks.delete(t);
     }
 
     private static TaskDtos.TaskResponse map(Task t) {

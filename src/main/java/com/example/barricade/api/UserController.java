@@ -1,12 +1,11 @@
 package com.example.barricade.api;
 
 import com.example.barricade.api.dto.UserDtos;
+import com.example.barricade.domain.User;
 import com.example.barricade.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,14 +18,25 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserDtos.UserResponse create(@Valid @RequestBody UserDtos.CreateUserRequest req) {
-        return userService.create(req);
-    }
-
+    /**
+     * GET /users/{id}
+     * Returns user information.
+     * Only fetching users; creation is done via /auth/register
+     */
     @GetMapping("/{id}")
     public UserDtos.UserResponse get(@PathVariable("id") UUID id) {
-        return userService.get(id);
+        User u = userService.getEntity(id);
+        return map(u);
+    }
+
+    /**
+     * Helper to map User entity to DTO
+     */
+    private static UserDtos.UserResponse map(User u) {
+        UserDtos.UserResponse res = new UserDtos.UserResponse();
+        res.id = u.getId();
+        res.name = u.getName();
+        res.email = u.getEmail();
+        return res;
     }
 }
