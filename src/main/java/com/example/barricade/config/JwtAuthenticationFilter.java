@@ -21,22 +21,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
-
+    private static final int BEARER_LENGTH = BEARER_PREFIX.length();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // Skip /auth/** endpoints
-        if (request.getServletPath().startsWith("/auth/")) {
+        String path = request.getServletPath();
+
+        // Skip authentication for public endpoints
+        if (path.startsWith("/auth/") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-resources") ||
+                path.startsWith("/webjars/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
-            String token = authHeader.substring(BEARER_PREFIX.length());
+            String token = authHeader.substring(BEARER_LENGTH);
             try {
                 String userIdStr = Jwts.parserBuilder()
                         .setSigningKey(JwtUtils.JWT_SECRET)
@@ -45,7 +51,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .getBody()
                         .getSubject();
 
-                // Set authentication in Spring Security context
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(userIdStr, null, Collections.emptyList());
                 SecurityContextHolder.getContext().setAuthentication(auth);
