@@ -29,11 +29,23 @@ public class TaskController {
 
     @GetMapping
     public Page<TaskDtos.TaskResponse> list(
+            @RequestParam(value = "userId", required = false) UUID userId,
             @RequestParam(value = "status", required = false) TaskStatus status,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
     ) {
-        return taskService.list(status, PageRequest.of(page, size));
+        int pageIndex = Math.max(page - 1, 0);
+        PageRequest pageRequest = PageRequest.of(pageIndex, size);
+
+        if (userId != null && status != null) {
+            return taskService.list(userId, status, pageRequest);
+        } else if (userId != null) {
+            return taskService.list(userId, pageRequest);
+        } else if (status != null) {
+            return taskService.list(status, pageRequest);
+        } else {
+            return taskService.list(pageRequest);
+        }
     }
 
 

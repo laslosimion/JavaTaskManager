@@ -12,74 +12,112 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @Service
 public class TaskService {
-    private final TaskRepository tasks;
+
+    private final TaskRepository taskRepository;
     private final UserService userService;
 
     public TaskService(TaskRepository tasks, UserService userService) {
-        this.tasks = tasks;
+        this.taskRepository = tasks;
         this.userService = userService;
+    }
+
+    private UUID getCurrentUserId() {
+        String userIdStr = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return UUID.fromString(userIdStr);
     }
 
     @Transactional
     public TaskDtos.TaskResponse create(TaskDtos.CreateTaskRequest req) {
-        User owner = userService.getCurrentAuthenticatedUser();
-        Task t = new Task();
-        t.setTitle(req.title);
-        t.setDescription(req.description);
-        t.setUser(owner);
-        tasks.save(t);
-        return map(t);
+        UUID userId = getCurrentUserId();
+
+        Task task = new Task();
+        task.setTitle(req.title);
+        task.setDescription(req.description);
+        task.setStatus(TaskStatus.TODO);
+        task.setUserId(userId);
+
+        Task saved = taskRepository.save(task);
+        return TaskDtos.TaskResponse.fromEntity(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TaskDtos.TaskResponse> list(UUID userId, TaskStatus status, Pageable pageable) {
+        return taskRepository.findByUserIdAndStatus(userId, status, pageable)
+                .map(TaskDtos.TaskResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TaskDtos.TaskResponse> list(UUID userId, Pageable pageable) {
+        return taskRepository.findByUserId(userId, pageable)
+                .map(TaskDtos.TaskResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)
     public Page<TaskDtos.TaskResponse> list(TaskStatus status, Pageable pageable) {
-        User owner = userService.getCurrentAuthenticatedUser();
-        if (status == null) {
-            return tasks.findByUser_Id(owner.getId(), pageable).map(TaskService::map);
-        } else {
-            return tasks.findByUser_IdAndStatus(owner.getId(), status, pageable).map(TaskService::map);
-        }
+        return taskRepository.findByStatus(status, pageable)
+                .map(TaskDtos.TaskResponse::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TaskDtos.TaskResponse> list(Pageable pageable) {
+        return taskRepository.findAll(pageable)
+                .map(TaskDtos.TaskResponse::fromEntity);
     }
 
     @Transactional
     public TaskDtos.TaskResponse updateStatus(UUID id, TaskStatus newStatus) {
-        Task t = tasks.findById(id).orElseThrow(() -> new NotFoundException("Task not found"));
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Task not found"));
+
         User owner = userService.getCurrentAuthenticatedUser();
-        if (!t.getUser().getId().equals(owner.getId())) {
+
+        if (!task.getUserId().equals(owner.getId())) {
             throw new ForbiddenException("You cannot modify someone else's task");
         }
 
-        TaskStatus current = t.getStatus();
-        if (current == newStatus) return map(t);
-
-        boolean ok = (current == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS)
-                || (current == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.DONE);
-        if (!ok) throw new ConflictException("Invalid status transition from " + current + " to " + newStatus);
-
-        t.setStatus(newStatus);
-        tasks.save(t);
-        return map(t);
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        Task t = tasks.findById(id).orElseThrow(() -> new NotFoundException("Task not found"));
-        User owner = userService.getCurrentAuthenticatedUser();
-        if (!t.getUser().getId().equals(owner.getId())) {
-            throw new ForbiddenException("You cannot delete someone else's task");
+        TaskStatus current = task.getStatus();
+        if (current == newStatus) {
+            return map(task); // No change, return current state
         }
-        tasks.delete(t);
+
+        boolean validTransition = (current == TaskStatus.TODO && newStatus == TaskStatus.IN_PROGRESS)
+                || (current == TaskStatus.IN_PROGRESS && newStatus == TaskStatus.DONE);
+
+        if (!validTransition) {
+            throw new ConflictException("Invalid status transition from " + current + " to " + newStatus);
+        }
+
+        task.setStatus(newStatus);
+        taskRepository.save(task);
+
+        return map(task);
     }
 
+    // Helper mapping function
     private static TaskDtos.TaskResponse map(Task t) {
         TaskDtos.TaskResponse res = new TaskDtos.TaskResponse();
         res.id = t.getId();
         res.title = t.getTitle();
         res.description = t.getDescription();
         res.status = t.getStatus();
-        res.userId = t.getUser().getId();
+        res.userId = t.getUserId();
         return res;
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        UUID currentUser = getCurrentUserId();
+        if (!task.getUserId().equals(currentUser)) {
+            throw new RuntimeException("Forbidden: you cannot delete someone else's task");
+        }
+
+        taskRepository.delete(task);
     }
 }
